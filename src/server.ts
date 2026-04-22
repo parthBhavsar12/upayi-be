@@ -8,7 +8,7 @@ mongoose
   .then(() => {
     console.log('✅ Connected to MongoDB');
     app.listen(config.port, () => {
-      console.log(`🚀 Server running in ${config.nodeEnv} mode on port ${config.port}`);
+      console.log(`🚀 Server running on port ${config.port}`);
     });
   })
   .catch((err) => {
