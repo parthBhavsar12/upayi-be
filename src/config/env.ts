@@ -18,5 +18,3 @@ export const config = {
   aesSecret: getEnvVar('AES_SECRET'),
   hmacSecret: getEnvVar('HMAC_SECRET'),
 };
-
-console.log("config", config);
