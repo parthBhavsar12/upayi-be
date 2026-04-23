@@ -29,6 +29,20 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: [true, 'Password is required'],
     },
+    isVerified: {
+      type: Boolean,
+      default: false,
+    },
+    tokens: {
+      resetPassword: {
+        type: String,
+        default: null,
+      },
+      emailVerification: {
+        type: String,
+        default: null,
+      },
+    },
   },
   {
     timestamps: true,
