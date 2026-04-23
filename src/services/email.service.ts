@@ -9,7 +9,7 @@ type SendEmailParams = {
   html?: string;
 };
 
-const baseUrl = () => config.backendUrl || `http://localhost:${config.port}`;
+const baseUrl = () => config.backendUrl;
 
 const getTransporter = () => {
   const user = config.smtpUser;
