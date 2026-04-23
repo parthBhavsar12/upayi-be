@@ -23,19 +23,42 @@ export const saveTransaction = async (req: AuthRequest, res: Response) => {
 
 export const getTransactions = async (req: AuthRequest, res: Response) => {
   try {
-    const { search, date } = req.query;
+    const { search, date, all, timezone } = req.query;
     
     // Build query filter
     let query: any = { user_id: req.user?.id };
     
-    // Add date filter if provided
-    if (date) {
-      const targetDate = new Date(date as string);
-      const startOfDay = new Date(targetDate);
-      startOfDay.setUTCHours(0, 0, 0, 0);
+    // Helper function to get date range in user's timezone
+    const getDateRangeInTimezone = (dateString: string) => {
+      const targetDate = new Date(dateString);
+      const userTimezone = timezone as string || 'UTC';
       
-      const endOfDay = new Date(targetDate);
-      endOfDay.setUTCHours(23, 59, 59, 999);
+      // Get start of day in user's timezone
+      const startOfDay = new Date(targetDate.toLocaleString('en-US', { timeZone: userTimezone }));
+      startOfDay.setHours(0, 0, 0, 0);
+      
+      // Get end of day in user's timezone
+      const endOfDay = new Date(targetDate.toLocaleString('en-US', { timeZone: userTimezone }));
+      endOfDay.setHours(23, 59, 59, 999);
+      
+      return { startOfDay, endOfDay };
+    };
+    
+    // Default to today's data unless 'all' parameter is provided
+    if (all === 'true') {
+      // Fetch all data - no date filter
+    } else if (date) {
+      // Specific date filter in user's timezone
+      const { startOfDay, endOfDay } = getDateRangeInTimezone(date as string);
+      
+      query.createdAt = {
+        $gte: startOfDay,
+        $lte: endOfDay
+      };
+    } else {
+      // Default: today's data in user's timezone
+      const today = new Date().toLocaleDateString('en-US', { timeZone: timezone as string || 'UTC' });
+      const { startOfDay, endOfDay } = getDateRangeInTimezone(today);
       
       query.createdAt = {
         $gte: startOfDay,
@@ -53,7 +76,28 @@ export const getTransactions = async (req: AuthRequest, res: Response) => {
     }
     
     const transactions = await Transaction.find(query).sort({ createdAt: -1 });
-    res.json(transactions);
+    
+    // Convert timestamps to user's timezone for display
+    const userTimezone = timezone as string || 'UTC';
+    const transactionsWithLocalTime = transactions.map(transaction => {
+      const localDate = new Date(transaction.createdAt).toLocaleString('en-US', { 
+        timeZone: userTimezone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit'
+      });
+      
+      return {
+        ...transaction.toObject(),
+        createdAt: transaction.createdAt, // Keep original for sorting
+        localCreatedAt: localDate // Add local time for display
+      };
+    });
+    
+    res.json(transactionsWithLocalTime);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch transactions', error });
   }
